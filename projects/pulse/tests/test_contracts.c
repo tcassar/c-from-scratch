@@ -406,40 +406,39 @@ int main(void)
     printf("║              Pulse Contract Test Suite                         ║\n");
     printf("╚════════════════════════════════════════════════════════════════╝\n");
     printf("\n");
-    
+
     printf("CONTRACT-1 (Soundness) Tests:\n");
     test_contract1_basic();
     test_contract1_no_evidence();
-    
+
     printf("\nCONTRACT-2 (Liveness) Tests:\n");
     test_contract2_basic();
     test_contract2_timing();
-    
+
     printf("\nCONTRACT-3 (Stability) Tests:\n");
     test_contract3_steady_heartbeats();
     test_contract3_recovery();
-    
+
     printf("\nBoundary Tests:\n");
     test_boundary_T_minus_1();
     test_boundary_exactly_T();
     test_boundary_T_plus_1();
-    
+
     printf("\nFault Injection Tests:\n");
     test_fault_clock_backward();
     test_fault_reentry();
-    
+
     printf("\nInvariant Tests:\n");
     test_invariants_throughout();
-    
+
     printf("\nFuzz Tests:\n");
     test_fuzz(100000);
-    
+
     printf("\n");
-    printf("╔════════════════════════════════════════════════════════════════╗\n");
-    printf("║  Results: %d/%d tests passed                                    ║\n", 
-           tests_passed, tests_run);
-    printf("╚════════════════════════════════════════════════════════════════╝\n");
+    printf("══════════════════════════════════════════════════════════════════\n");
+    printf("  Results: %d/%d tests passed\n", tests_passed, tests_run);
+    printf("══════════════════════════════════════════════════════════════════\n");
     printf("\n");
-    
+
     return (tests_passed == tests_run) ? 0 : 1;
 }
