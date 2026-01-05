@@ -384,15 +384,8 @@ After completing this lesson, you should have:
 
 In **Lesson 3: Structs & Data Dictionary**, we'll translate this mathematical model into C data structures. Every field will trace back to a requirement established here.
 
----
-
-[Previous: Lesson 1 — The Problem](../01-the-problem/LESSON.md) | [Next: Lesson 3 — Structs](../03-structs/LESSON.md)
 
 *"The struct is the contract. The code merely enforces it."*
-
----
-
-[Previous: Lesson 1 — The Problem](../01-the-problem/LESSON.md) | [Next: Lesson 3 — Structs](../03-structs/LESSON.md)
 
 ---
 
