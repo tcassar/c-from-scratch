@@ -33,7 +33,10 @@ This course teaches you to write code that *provably* works.
 
 ## Projects
 
-### [Pulse](./projects/pulse/) — Heartbeat Liveness Monitor
+### [Module 1: Pulse](./projects/pulse/) — Heartbeat Liveness Monitor
+
+*"Does something exist in time?"*
+
 A tiny, provably-correct state machine that answers: *"Is this process alive?"*
 
 - 5 lessons from problem definition to hardened code
@@ -41,7 +44,47 @@ A tiny, provably-correct state machine that answers: *"Is this process alive?"*
 - Handles clock wrap, faults, and edge cases
 - Zero dependencies beyond libc
 
-*More projects coming...*
+**Contracts proven:** Soundness, Liveness, Stability
+
+---
+
+### [Module 2: Baseline](./projects/baseline/) — Statistical Normality Monitor
+
+*"Is what's happening normal?"*
+
+A closed, total, deterministic FSM for detecting statistical anomalies in scalar streams.
+
+- 6 lessons from problem statement to composition
+- EMA-based anomaly detection with O(1) memory
+- 18 contract and invariant tests
+- Composes with Pulse for timing anomaly detection
+
+**Contracts proven:** Convergence, Sensitivity, Stability, Spike Resistance
+
+---
+
+### Coming Next: Module 3 — Composition
+
+*Pulse + Baseline = Timing Anomaly Detector*
+
+```
+event_t → Pulse → Δt → Baseline → deviation?
+```
+
+## The Big Picture
+
+| Module | Question | Output |
+|--------|----------|--------|
+| Pulse | Does something happen? | Yes / No |
+| Baseline | Is what's happening normal? | Degree of deviation |
+| Composition | Is the system healthy? | Proof-carrying signal |
+
+Each module is:
+- **Closed** — State depends only on previous state + input
+- **Total** — Always returns a valid result
+- **Bounded** — O(1) memory, O(1) compute
+- **Deterministic** — Same inputs → same outputs
+- **Contract-defined** — Behaviour is specified, not implied
 
 ## Who This Is For
 
@@ -59,12 +102,20 @@ A tiny, provably-correct state machine that answers: *"Is this process alive?"*
 ## Getting Started
 
 ```bash
+# Module 1: Pulse
 cd projects/pulse
 make
-./build/pulse
+make demo
+make test
+
+# Module 2: Baseline
+cd projects/baseline
+make
+make demo
+make test
 ```
 
-Then start with [Lesson 1: The Problem](./projects/pulse/lessons/01-the-problem/LESSON.md).
+Then start with [Pulse Lesson 1: The Problem](./projects/pulse/lessons/01-the-problem/LESSON.md).
 
 ## Author
 
