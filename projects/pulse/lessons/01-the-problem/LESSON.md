@@ -311,6 +311,8 @@ Is the process actually dead?
 ### Exercise 1.4: Audit
 Look at the systemd source code for service watchdog handling. How many lines of code are involved? How many states? Could you personally verify its correctness?
 
+**Starting point:** [systemd/src/core/manager.c](https://github.com/systemd/systemd/blob/main/src/core/manager.c) — search for "watchdog". You'll also need to trace into `service.c` and `unit.c`.
+
 (This isn't a trick question — the answer should motivate why we're building something smaller.)
 
 ---

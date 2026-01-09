@@ -50,6 +50,22 @@ S = { UNKNOWN, ALIVE, DEAD }
 
 More states create more transitions to prove. These three are the minimum needed to satisfy our contracts. UNKNOWN is essential—without it, we'd have to guess ALIVE or DEAD at startup.
 
+### Why UNKNOWN Matters (Epistemic Honesty)
+
+UNKNOWN isn't a failure state—it's an *honest* state. The system is saying: "I don't have enough evidence yet to make a claim."
+
+The alternative is what most monitors do: guess. They default to ALIVE (dangerous—miss failures) or DEAD (noisy—false alarms).
+
+Think of a doctor meeting a new patient: "I don't know yet" is more honest than guessing. The initialisation window exists because certainty requires evidence.
+
+UNKNOWN answers the question: "What does the monitor say when it genuinely doesn't know?" Most systems never ask this question—and that's a bug.
+
+**Why UNKNOWN doesn't transition to DEAD on init timeout:**
+
+UNKNOWN means "insufficient evidence." If initialisation times out, we still don't know if the process is dead or just slow to start. DEAD is a *claim* that requires evidence (missed heartbeats after being ALIVE).
+
+An alternative design could treat init timeout as DEAD. This is a valid architectural choice—the key is being explicit about what each state *means*.
+
 ### 1.2 Time Model
 
 Time is a **monotonic modular counter**:
@@ -116,7 +132,7 @@ Unsigned overflow is guaranteed to wrap. We can reason about it mathematically.
 
 ## 3. Internal State Variables
 
-All variables are explicitly owned by the FSM struct (no globals):
+All variables are explicitly owned by the Finite State Machine (FSM) struct (no globals):
 
 | Variable | Type | Purpose |
 |----------|------|---------|
@@ -187,16 +203,18 @@ Both are validated using the half-range rule before use.
 
 ### 5.2 Total State Update Table
 
-| Current | hb_seen | Condition | Next | Justification |
-|---------|---------|-----------|------|---------------|
-| ANY | ANY | age invalid | DEAD | Fail-safe |
-| UNKNOWN | 0 | a_init < W | UNKNOWN | Init latency |
-| UNKNOWN | 0 | a_init ≥ W | UNKNOWN | No evidence |
-| UNKNOWN | 1 | a_hb ≤ T | ALIVE | First evidence |
-| ALIVE | 1 | a_hb ≤ T | ALIVE | Invariant |
-| ALIVE | 0 | a_hb > T | DEAD | Timeout |
-| DEAD | 1 | a_hb ≤ T | ALIVE | Recovery |
-| DEAD | 0 | a_hb > T | DEAD | Stability |
+| Row | Current | hb_seen | Condition | Next | Justification |
+|-----|---------|---------|-----------|------|---------------|
+| 1 | ANY | ANY | age invalid | DEAD | Fail-safe |
+| 2 | UNKNOWN | 0 | a_init < W | UNKNOWN | Init latency |
+| 3 | UNKNOWN | 0 | a_init ≥ W | UNKNOWN | No evidence |
+| 4 | UNKNOWN | 1 | a_hb ≤ T | ALIVE | First evidence |
+| 5 | ALIVE | 1 | a_hb ≤ T | ALIVE | Invariant |
+| 6 | ALIVE | 0 | a_hb > T | DEAD | Timeout |
+| 7 | DEAD | 1 | a_hb ≤ T | ALIVE | Recovery |
+| 8 | DEAD | 0 | a_hb > T | DEAD | Stability |
+
+**Note on completeness:** This table contains 8 explicit transition rows. The first row (age invalid) serves as a catch-all for any state, ensuring that even states not explicitly listed (due to corruption, for example) are handled safely. Together, these 8 rows cover all possible combinations of state, input, and condition.
 
 **This table is exhaustive** → δ is total → design is **CLOSED**.
 
@@ -212,7 +230,7 @@ A **closed** system has no undefined states or transitions. Every possible input
 
 1. List all states: 3 (UNKNOWN, ALIVE, DEAD)
 2. List all input combinations: hb_seen ∈ {0, 1} × age validity ∈ {valid, invalid}
-3. Count rows in table: 8 transitions + 1 catch-all = all cases covered ✓
+3. Count rows in table: 8 explicit transitions covering all cases ✓
 
 ---
 
@@ -346,6 +364,7 @@ Before writing code, verify:
 ## Exercises
 
 ### Exercise 2.1: Transition Trace
+
 Trace through the state transitions for this scenario:
 - t=0: Init
 - t=5: Heartbeat
@@ -354,6 +373,23 @@ Trace through the state transitions for this scenario:
 - t=20: Heartbeat
 
 Assume T=12, W=3. What is the state at each step?
+
+**Use this table format for your trace:**
+
+| t (ms) | Event | a_init | a_hb | Condition | State |
+|--------|-------|--------|------|-----------|-------|
+| 0 | init | 0 | — | — | UNKNOWN |
+| 5 | heartbeat | 5 | 0 | a_init > W, a_hb ≤ T | ALIVE |
+| 10 | (none) | 10 | 5 | a_hb ≤ T | ? |
+| 15 | (none) | — | — | — | ? |
+| 20 | heartbeat | — | — | — | ? |
+
+Complete the trace for t=10, t=15, t=20.
+
+**Hints:**
+- At t=10, has the heartbeat at t=5 expired yet? (T=12)
+- At t=15, how old is the last heartbeat now?
+- What happens at t=20 when a new heartbeat arrives?
 
 ### Exercise 2.2: Prove by Contradiction
 Prove CONTRACT-1 by contradiction: Assume ALIVE is reported when the process is actually dead. Show this contradicts our transition rules.

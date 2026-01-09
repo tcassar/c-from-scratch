@@ -9,7 +9,7 @@ A tiny, provably-correct state machine that answers one question:
 Pulse is a heartbeat-based liveness monitor built with mathematical rigour:
 
 - **~200 lines of C** — Small enough to audit completely
-- **Zero dependencies** — Just libc
+- **Zero dependencies** — Just the Standard C library (libc)
 - **Mathematically proven** — Contracts verified before code written
 - **Handles edge cases** — Clock wrap, jumps, faults, reentry
 
@@ -31,11 +31,18 @@ Pulse is a heartbeat-based liveness monitor built with mathematical rigour:
 | 4 | [Code](lessons/04-code/LESSON.md) | Transcribe math to C |
 | 5 | [Testing & Hardening](lessons/05-testing/LESSON.md) | Verify and bulletproof |
 
+## Terminology
+
+This course uses some technical abbreviations:
+
+- **FSM** — Finite State Machine: a system with a fixed set of states and defined transitions between them
+- **EMA** — Exponential Moving Average: a weighted average that gives more importance to recent values
+
 ## Quick Start
 
 ```bash
 make
-./build/pulse
+make demo
 ```
 
 ## Building
@@ -43,6 +50,9 @@ make
 ```bash
 # Standard build
 make
+
+# Build and run demo
+make demo
 
 # Run tests
 make test
@@ -103,3 +113,7 @@ while (running) {
 See [Lesson 1](lessons/01-the-problem/LESSON.md) for a detailed analysis.
 
 **TL;DR:** They're either too complex to verify or too simple to be correct.
+
+## Acknowledgments
+
+- **Andy Cranston** — Detailed beta testing and feedback on Modules 1-2

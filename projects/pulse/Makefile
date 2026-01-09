@@ -2,6 +2,7 @@
 #
 # Targets:
 #   all     - Build everything (default)
+#   demo    - Build and run the demo
 #   test    - Run all tests
 #   clean   - Remove build artifacts
 #   check   - Static analysis
@@ -26,7 +27,7 @@ SRCS = $(SRC_DIR)/pulse.c $(SRC_DIR)/main.c
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 TARGET = $(BUILD_DIR)/pulse
 
-.PHONY: all test clean check format help
+.PHONY: all demo test clean check format help
 
 all: $(TARGET)
 
@@ -38,6 +39,9 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
+
+demo: $(TARGET)
+	./$(TARGET)
 
 test: $(TARGET)
 	@echo "Running contract tests..."
@@ -66,6 +70,7 @@ format:
 help:
 	@echo "Available targets:"
 	@echo "  all     - Build the pulse binary (default)"
+	@echo "  demo    - Build and run the demo"
 	@echo "  test    - Run all tests"
 	@echo "  clean   - Remove build artifacts"
 	@echo "  check   - Run static analysis (requires cppcheck)"
