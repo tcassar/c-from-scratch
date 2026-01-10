@@ -1,0 +1,38 @@
+# Build artifacts
+build/
+*.o
+*.a
+*.so
+
+# Executables
+consensus
+test_contracts
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Debug files
+*.dSYM/
+core
+vgcore.*
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Temporary
+*.tmp
+*.log
+
+# Archives
+*.tar.gz
+*.zip
