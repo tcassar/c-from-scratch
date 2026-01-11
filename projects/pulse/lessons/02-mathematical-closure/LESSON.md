@@ -20,11 +20,11 @@ This design implements a **closed, total, deterministic state machine** that mon
 
 **The guarantees:**
 
-| Property | Guarantee |
-|----------|-----------|
-| Soundness | System **never** reports ALIVE incorrectly |
-| Liveness | System **eventually** reports DEAD if heartbeats stop |
-| Determinism | System **never** enters an undefined state |
+| Property    | Guarantee                                             |
+| ----------- | ----------------------------------------------------- |
+| Soundness   | System **never** reports ALIVE incorrectly            |
+| Liveness    | System **eventually** reports DEAD if heartbeats stop |
+| Determinism | System **never** enters an undefined state            |
 
 These guarantees hold even under clock faults or resets.
 
@@ -40,11 +40,11 @@ The monitor can be in exactly one of three states:
 S = { UNKNOWN, ALIVE, DEAD }
 ```
 
-| State | Meaning | When |
-|-------|---------|------|
-| UNKNOWN | Insufficient evidence | Initial state, no heartbeat yet |
-| ALIVE | Evidence of life | Heartbeat received within timeout |
-| DEAD | Evidence expired or fault | Timeout elapsed or corruption detected |
+| State   | Meaning                   | When                                   |
+| ------- | ------------------------- | -------------------------------------- |
+| UNKNOWN | Insufficient evidence     | Initial state, no heartbeat yet        |
+| ALIVE   | Evidence of life          | Heartbeat received within timeout      |
+| DEAD    | Evidence expired or fault | Timeout elapsed or corruption detected |
 
 **Why only three states?**
 
@@ -52,7 +52,7 @@ More states create more transitions to prove. These three are the minimum needed
 
 ### Why UNKNOWN Matters (Epistemic Honesty)
 
-UNKNOWN isn't a failure state—it's an *honest* state. The system is saying: "I don't have enough evidence yet to make a claim."
+UNKNOWN isn't a failure state—it's an _honest_ state. The system is saying: "I don't have enough evidence yet to make a claim."
 
 The alternative is what most monitors do: guess. They default to ALIVE (dangerous—miss failures) or DEAD (noisy—false alarms).
 
@@ -62,9 +62,9 @@ UNKNOWN answers the question: "What does the monitor say when it genuinely doesn
 
 **Why UNKNOWN doesn't transition to DEAD on init timeout:**
 
-UNKNOWN means "insufficient evidence." If initialisation times out, we still don't know if the process is dead or just slow to start. DEAD is a *claim* that requires evidence (missed heartbeats after being ALIVE).
+UNKNOWN means "insufficient evidence." If initialisation times out, we still don't know if the process is dead or just slow to start. DEAD is a _claim_ that requires evidence (missed heartbeats after being ALIVE).
 
-An alternative design could treat init timeout as DEAD. This is a valid architectural choice—the key is being explicit about what each state *means*.
+An alternative design could treat init timeout as DEAD. This is a valid architectural choice—the key is being explicit about what each state _means_.
 
 ### 1.2 Time Model
 
@@ -75,6 +75,7 @@ t ∈ ℤ₂ᴺ  where N = 64 for uint64_t
 ```
 
 This means:
+
 - Time values are unsigned 64-bit integers
 - Values wrap around at 2⁶⁴ (approximately 18 quintillion)
 - Wrapping is well-defined (not undefined behaviour)
@@ -92,6 +93,7 @@ age is valid iff age < 2ᴺ⁻¹
 ```
 
 If `age ≥ 2⁶³`, either:
+
 - The clock jumped backwards, or
 - More than 2⁶³ time units elapsed (physically impossible in practice)
 
@@ -100,27 +102,31 @@ Either way, we can't trust the result.
 ### Why Modular Arithmetic?
 
 **Problem with signed integers:**
+
 ```c
 int64_t age = now - then;  // UNDEFINED BEHAVIOUR if overflow!
 ```
+
 The C standard says signed overflow is undefined. The compiler may do anything.
 
 **Solution with unsigned:**
+
 ```c
 uint64_t age = now - then;  // DEFINED: wraps at 2⁶⁴
 ```
+
 Unsigned overflow is guaranteed to wrap. We can reason about it mathematically.
 
 ---
 
 ## 2. Parameters (Design Constants)
 
-| Parameter | Symbol | Meaning | Constraint |
-|-----------|--------|---------|------------|
-| Timeout | T | Maximum age of heartbeat before DEAD | T > P_max + Jitter |
-| Init Window | W | Time to wait before expecting heartbeats | W ≥ 0 |
-| Poll Period | P | Maximum time between `hb_step` calls | P ≤ T_margin |
-| Margin | T_margin | Acceptable lateness in DEAD detection | Optional |
+| Parameter   | Symbol   | Meaning                                  | Constraint         |
+| ----------- | -------- | ---------------------------------------- | ------------------ |
+| Timeout     | T        | Maximum age of heartbeat before DEAD     | T > P_max + Jitter |
+| Init Window | W        | Time to wait before expecting heartbeats | W ≥ 0              |
+| Poll Period | P        | Maximum time between `hb_step` calls     | P ≤ T_margin       |
+| Margin      | T_margin | Acceptable lateness in DEAD detection    | Optional           |
 
 **Constraint explanations:**
 
@@ -134,14 +140,14 @@ Unsigned overflow is guaranteed to wrap. We can reason about it mathematically.
 
 All variables are explicitly owned by the Finite State Machine (FSM) struct (no globals):
 
-| Variable | Type | Purpose |
-|----------|------|---------|
-| `st` | state_t | Current state ∈ S |
-| `t_init` | uint64_t | Boot/reset reference time |
-| `last_hb` | uint64_t | Timestamp of most recent heartbeat |
-| `have_hb` | uint8_t | Evidence flag (≥1 heartbeat observed) |
-| `fault_time` | uint8_t | Clock corruption detected |
-| `fault_reentry` | uint8_t | Atomicity violation detected |
+| Variable        | Type     | Purpose                               |
+| --------------- | -------- | ------------------------------------- |
+| `st`            | state_t  | Current state ∈ S                     |
+| `t_init`        | uint64_t | Boot/reset reference time             |
+| `last_hb`       | uint64_t | Timestamp of most recent heartbeat    |
+| `have_hb`       | uint8_t  | Evidence flag (≥1 heartbeat observed) |
+| `fault_time`    | uint8_t  | Clock corruption detected             |
+| `fault_reentry` | uint8_t  | Atomicity violation detected          |
 
 **Why these specific variables?**
 
@@ -168,7 +174,7 @@ Timeline: t_init ─────────[W]─────────[T]─
 
 **Example scenarios:**
 
-1. **Heartbeat before W expires**: 
+1. **Heartbeat before W expires**:
    - t=0: Init → UNKNOWN
    - t=W/2: Heartbeat → ALIVE
    - Stays ALIVE as long as heartbeats continue within T
@@ -203,16 +209,16 @@ Both are validated using the half-range rule before use.
 
 ### 5.2 Total State Update Table
 
-| Row | Current | hb_seen | Condition | Next | Justification |
-|-----|---------|---------|-----------|------|---------------|
-| 1 | ANY | ANY | age invalid | DEAD | Fail-safe |
-| 2 | UNKNOWN | 0 | a_init < W | UNKNOWN | Init latency |
-| 3 | UNKNOWN | 0 | a_init ≥ W | UNKNOWN | No evidence |
-| 4 | UNKNOWN | 1 | a_hb ≤ T | ALIVE | First evidence |
-| 5 | ALIVE | 1 | a_hb ≤ T | ALIVE | Invariant |
-| 6 | ALIVE | 0 | a_hb > T | DEAD | Timeout |
-| 7 | DEAD | 1 | a_hb ≤ T | ALIVE | Recovery |
-| 8 | DEAD | 0 | a_hb > T | DEAD | Stability |
+| Row | Current | hb_seen | Condition   | Next    | Justification  |
+| --- | ------- | ------- | ----------- | ------- | -------------- |
+| 1   | ANY     | ANY     | age invalid | DEAD    | Fail-safe      |  # sink state
+| 2   | UNKNOWN | 0       | a_init < W  | UNKNOWN | Init latency   |
+| 3   | UNKNOWN | 0       | a_init ≥ W  | UNKNOWN | No evidence    |
+| 4   | UNKNOWN | 1       | a_hb ≤ T    | ALIVE   | First evidence |
+| 5   | ALIVE   | 1       | a_hb ≤ T    | ALIVE   | Invariant      |
+| 6   | ALIVE   | 0       | a_hb > T    | DEAD    | Timeout        |
+| 7   | DEAD    | 1       | a_hb ≤ T    | ALIVE   | Recovery       |
+| 8   | DEAD    | 0       | a_hb > T    | DEAD    | Stability      |
 
 **Note on completeness:** This table contains 8 explicit transition rows. The first row (age invalid) serves as a catch-all for any state, ensuring that even states not explicitly listed (due to corruption, for example) are handled safely. Together, these 8 rows cover all possible combinations of state, input, and condition.
 
@@ -243,6 +249,7 @@ A **closed** system has no undefined states or transitions. Every possible input
 **Proof:**
 
 ALIVE is reachable if and only if:
+
 ```
 have_hb = 1 ∧ a_hb ≤ T
 ```
@@ -261,14 +268,16 @@ Therefore, ALIVE can only be reported when evidence is fresh and valid.
 
 **Proof:**
 
-Let last heartbeat be at time t*.
+Let last heartbeat be at time t\*.
 
 For any step where:
+
 ```
 now > t* + T  ⇒  a_hb > T  ⇒  DEAD
 ```
 
 Since polling occurs at least every P, DEAD is reached by:
+
 ```
 t* + T + P
 ```
@@ -352,12 +361,12 @@ Before writing code, verify:
 
 **This design is CLOSED.**
 
-| Property | Status |
-|----------|--------|
-| Every input → exactly one next state | ✓ |
-| All failure modes → deterministic outcomes | ✓ |
-| Contracts proven under explicit assumptions | ✓ |
-| Ready for direct transcription to C99 | ✓ |
+| Property                                    | Status |
+| ------------------------------------------- | ------ |
+| Every input → exactly one next state        | ✓      |
+| All failure modes → deterministic outcomes  | ✓      |
+| Contracts proven under explicit assumptions | ✓      |
+| Ready for direct transcription to C99       | ✓      |
 
 ---
 
@@ -366,6 +375,7 @@ Before writing code, verify:
 ### Exercise 2.1: Transition Trace
 
 Trace through the state transitions for this scenario:
+
 - t=0: Init
 - t=5: Heartbeat
 - t=10: No heartbeat
@@ -376,32 +386,90 @@ Assume T=12, W=3. What is the state at each step?
 
 **Use this table format for your trace:**
 
-| t (ms) | Event | a_init | a_hb | Condition | State |
-|--------|-------|--------|------|-----------|-------|
-| 0 | init | 0 | — | — | UNKNOWN |
-| 5 | heartbeat | 5 | 0 | a_init > W, a_hb ≤ T | ALIVE |
-| 10 | (none) | 10 | 5 | a_hb ≤ T | ? |
-| 15 | (none) | — | — | — | ? |
-| 20 | heartbeat | — | — | — | ? |
+
+| t (ms) | Event     | a_init | a_hb | Condition            | State   |
+| ------ | --------- | ------ | ---- | -------------------- | ------- |
+| 0      | init      | 0      | 0    | UNKNOWN              | UNKNOWN |
+| 5      | heartbeat | 5      | 0    | a_init > W, a_hb ≤ T | ALIVE   |
+| 10     | (none)    | 10     | 5    | a_hb ≤ T             | ALIVE   |
+| 15     | (none)    | 15     | 10   | a_hb <= T            | ALIVE   |
+| 20     | heartbeat | 20     | 0    | a_hb <= T            | ALIVE   |
 
 Complete the trace for t=10, t=15, t=20.
 
 **Hints:**
+
 - At t=10, has the heartbeat at t=5 expired yet? (T=12)
 - At t=15, how old is the last heartbeat now?
 - What happens at t=20 when a new heartbeat arrives?
 
 ### Exercise 2.2: Prove by Contradiction
+
 Prove CONTRACT-1 by contradiction: Assume ALIVE is reported when the process is actually dead. Show this contradicts our transition rules.
 
+
+```
+alive iff have_hb = 1 ^ a_hb <= T
+```
+
+If `have_hb` = 0, then **no txns in table** lead to an ALIVE state. Therefore, `have_hb` = 1 is necessary for an alive state
+
+Similarly if a_hb > T, no txns in table can result in an alive state. Therefore, the inverse is also a necessary condition to result in an alive state.
+
+As we know the table is closed, we can see that it is impossible to get to an alive state when contract one doesn't hold. 
+
+(# TODO: probably could do more to prove the other branch of the iff)
+
 ### Exercise 2.3: Parameter Selection
+
 A process sends heartbeats every 1000ms. Your polling interval is 100ms. Clock jitter is ±5ms. What values should you choose for T and W? Justify each choice.
 
+T should be duration of a heartbeat + max clock jitter = 1000+5 meaning 1005ms
+
+To avoid false deaths, we can also choose to set W to 1005 for the same rationale. 
+If we set W to 0, we would always start monitoring by reporting the process is dead, whereas we in fact do not know the state of the process since we haven't listened long enough for a heartbeat.
+
 ### Exercise 2.4: Missing Transition
+
 Remove row 7 (DEAD + heartbeat → ALIVE) from the transition table. What property is lost? Is the system still closed?
 
+| Row | Current | hb_seen | Condition   | Next    | Justification  |
+| --- | ------- | ------- | ----------- | ------- | -------------- |
+| 1   | ANY     | ANY     | age invalid | DEAD    | Fail-safe      |  # sink state
+| 2   | UNKNOWN | 0       | a_init < W  | UNKNOWN | Init latency   |
+| 3   | UNKNOWN | 0       | a_init ≥ W  | UNKNOWN | No evidence    |
+| 4   | UNKNOWN | 1       | a_hb ≤ T    | ALIVE   | First evidence |
+| 5   | ALIVE   | 1       | a_hb ≤ T    | ALIVE   | Invariant      |
+| 6   | ALIVE   | 0       | a_hb > T    | DEAD    | Timeout        |
+| 8   | DEAD    | 0       | a_hb > T    | DEAD    | Stability      |
+
+removed:
+| 7   | DEAD    | 1       | a_hb ≤ T    | ALIVE   | Recovery       |
+
+We have lost the soundness property.
+Seeing a heartbeat in the DEAD state at time T, we have `have_hb` = 1 and `a_hb` <= T
+but we do not transition to ALIVE.
+
+Our system is no longer closed, as the transition above is undefined. Sink state only
+applies to cases where age is invalid. Here, our age is valid but we don't know where to go. 
+
 ### Exercise 2.5: Fourth State
+
 Propose a fourth state (e.g., STARTING). Define its transitions. Does it improve any contract, or just add complexity?
+
+Start in a STARTING state instead of UNKNOWN. Like this, we differentiate between not knowing for some exoteric reason and because we are simply getting started.
+
+We would change row 2 to 
+
+| 2   | STARTING | 0       | a_init < W  | STARTING | Init latency   |
+| 3   | STARTING | 0       | a_init ≥ W  | UNKNOWN | No evidence    |
+| 4   | STARTING | 1       | a_hb ≤ T    | ALIVE   | First evidence |
+
+But would also need to add transitions 
+
+| 9   | UNKNOWN | 1       | a_hb ≤ T    | ALIVE   | First evidence |
+
+Adding this state hasn't helped since we still fundamentally just don't know whats going on and don't really care the cause. We now have more transitions to worry about, more state, and more complexity.
 
 ---
 
@@ -420,8 +488,7 @@ After completing this lesson, you should have:
 
 In **Lesson 3: Structs & Data Dictionary**, we'll translate this mathematical model into C data structures. Every field will trace back to a requirement established here.
 
-
-*"The struct is the contract. The code merely enforces it."*
+_"The struct is the contract. The code merely enforces it."_
 
 ---
 
